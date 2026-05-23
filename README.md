@@ -22,6 +22,7 @@ The Epic Sepsis Model (ESM) is deployed at hundreds of US hospitals. Research co
 - Each payload includes: risk probability, top SHAP features in plain language, pre-treatment timestamp certification, and Patient resource reference
 
 ## Repository Structure
+```
 mimic-sepsis-ews/
 ├── data/
 │   ├── raw/          # Raw MIMIC-IV extracts (not committed — covered by DUA)
@@ -38,6 +39,7 @@ mimic-sepsis-ews/
 │   ├── fhir_generator.py
 │   └── contamination_audit.py
 └── README.md
+```
 ## Dataset
 MIMIC-IV v3.1 (Medical Information Mart for Intensive Care)  
 Access: PhysioNet Credentialed Health Data License  
