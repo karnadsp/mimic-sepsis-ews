@@ -1,7 +1,7 @@
 # MIMIC-IV Pre-Treatment Sepsis Early Warning System
 
 ## Overview
-An independent Random Forest classifier for early sepsis prediction, built exclusively on pre-treatment physiological data from the MIMIC-IV clinical database. This project directly addresses the critical flaw identified by Wiens et al. (2024, NEJM AI), which demonstrated that the Epic Sepsis Model collapses to an AUROC of 0.47 when restricted to pre-treatment data — worse than random chance.
+An independent Random Forest classifier for early sepsis prediction, built exclusively on pre-treatment physiological data from the MIMIC-IV clinical database. This project directly addresses the critical flaw identified by Wiens et al. (2024, NEJM AI), which demonstrated that the Epic Sepsis Model collapses to an AUROC of 0.47 when restricted to pre-treatment data, which is worse than random chance.
 
 This system predicts sepsis risk using only biological signals available before any clinician-initiated treatment markers (antibiotics, blood cultures, IV fluids), and outputs standardized FHIR R4 RiskAssessment resources for clinical deployment.
 
@@ -9,7 +9,7 @@ This system predicts sepsis risk using only biological signals available before 
 
 ## The Problem
 
-The Epic Sepsis Model (ESM) is deployed at hundreds of US hospitals including Michigan Medicine. Research conducted at the University of Michigan on 77,000+ adult inpatients found that the ESM's AUROC drops from 0.62 to **0.47** — worse than a coin toss — once predictions are restricted to pre-treatment data. This means the model performs worst precisely when clinicians need it most: before they have already suspected sepsis.
+The Epic Sepsis Model (ESM) is deployed at hundreds of US hospitals including Michigan Medicine. Research conducted at the University of Michigan on 77,000+ adult inpatients found that the ESM's AUROC drops from 0.62 to **0.47**, worse than a coin toss, once predictions are restricted to pre-treatment data. This means the model performs worst precisely when clinicians need it most: before they have already suspected sepsis.
 
 ---
 
@@ -29,25 +29,25 @@ The Epic Sepsis Model (ESM) is deployed at hundreds of US hospitals including Mi
 
 ## What This Project Builds
 
-### Layer 1 — Machine Learning
+### Layer 1 - Machine Learning
 - Random Forest classifier (scikit-learn) trained exclusively on pre-treatment data
 - **Cohort:** 67,286 adult ICU stays from MIMIC-IV v3.1 (Beth Israel Deaconess Medical Center, 2008-2022)
-- **Features:** vital sign trends, early lab results, age, chronic conditions — all captured within the first 6 hours of ICU admission and strictly before treatment initiation
-- **Treatment trigger:** earliest of first antibiotic order or blood culture — defines the contamination cutoff
+- **Features:** vital sign trends, early lab results, age, chronic conditions. These are all captured within the first 6 hours of ICU admission and strictly before treatment initiation
+- **Treatment trigger:** earliest of first antibiotic order or blood culture which defines the contamination cutoff
 - **Outcome label:** Sepsis-3 validated labels from MIMIC-IV derived dataset
 - **SHAP contamination audit:** mathematically confirms zero treatment markers in top 20 predictive features
 
-### Layer 2 — Interoperability
+### Layer 2 - Interoperability
 - Deterministic Python pipeline transforming model risk scores into FHIR R4 RiskAssessment JSON payloads
 - SNOMED CT terminology bindings for sepsis outcome coding
-- Custom extension certifying pre-treatment status — a guarantee no proprietary sepsis model currently provides
+- Custom extension certifying pre-treatment status. This is a guarantee which no proprietary sepsis model currently provides
 - SHAP-derived rationale text embedded in each resource for clinical transparency
 
 ---
 
-## SHAP Contamination Audit — PASSED
+## SHAP Contamination Audit: PASSED
 
-Top 20 features by mean absolute SHAP value — **zero treatment markers**:
+Top 20 features by mean absolute SHAP value: **zero treatment markers**:
 
 | Rank | Feature | Clinical Meaning |
 |---|---|---|
@@ -71,7 +71,7 @@ No antibiotics, no blood culture timestamps, no IV fluid markers anywhere in the
 ```
 mimic-sepsis-ews/
 ├── data/
-│   ├── raw/          # Raw MIMIC-IV extracts (not committed — covered by DUA)
+│   ├── raw/          # Raw MIMIC-IV extracts (not committed: covered by DUA)
 │   └── processed/    # Cleaned cohort, feature matrices, model, FHIR bundle
 ├── notebooks/
 │   ├── 01_cohort_definition.ipynb       # Data loading, imputation, train/test split
@@ -91,7 +91,7 @@ mimic-sepsis-ews/
 
 ## Reproducibility
 
-Notebooks are environment-agnostic — they auto-detect Google Colab vs local VSCode:
+Notebooks are environment-agnostic. They are designed to auto-detect Google Colab vs local VSCode:
 
 ```python
 if os.path.exists('/content/drive'):
@@ -105,8 +105,8 @@ else:
 ```
 
 **Tested environments:**
-- Google Colab (Python 3, scikit-learn 1.9.0) — AUROC 0.7766
-- Local VSCode, Windows 11, Intel Core i9-11800H, 32GB RAM (Python 3, scikit-learn) — AUROC 0.8160
+- Google Colab (Python 3, scikit-learn 1.9.0) gives AUROC 0.7766
+- Local VSCode, Windows 11, Intel Core i9-11800H, 32GB RAM (Python 3, scikit-learn) gives AUROC 0.8160
 
 ---
 
@@ -147,4 +147,4 @@ Master of Health Informatics, University of Michigan (May 2026)
 [LinkedIn](https://linkedin.com/in/shreyas-karnad) | [Portfolio](https://karnadsp.github.io) | [GitHub](https://github.com/karnadsp)
 
 ## Status
-🟢 Complete — AUROC 0.7766 (Colab) | 0.8160 (Local) | FHIR R4 output | SHAP audit passed
+🟢 Complete.  AUROC 0.7766 (Colab) | 0.8160 (Local) | FHIR R4 output | SHAP audit passed
