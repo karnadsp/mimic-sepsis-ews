@@ -18,10 +18,10 @@ The Epic Sepsis Model (ESM) is deployed at hundreds of US hospitals including Mi
 | Model | AUROC | Notes |
 |---|---|---|
 | Random classifier | 0.50 | Theoretical baseline |
-| Epic ESM - pre-treatment (Wiens et al. 2024) | 0.47 | Worse than random |
-| Epic ESM - with treatment contamination | 0.62 | Standard ESM deployment |
-| **This model - pre-treatment RF (Google Colab)** | **0.7766** | ✅ Primary result |
-| **This model - pre-treatment RF (Local VSCode)** | **0.8160** | ✅ Reproduced locally |
+| Epic ESM: pre-treatment (Wiens et al. 2024) | 0.47 | Worse than random |
+| Epic ESM: with treatment contamination | 0.62 | Standard ESM deployment |
+| **This model: pre-treatment RF (Google Colab)** | **0.7766** | ✅ Primary result |
+| **This model: pre-treatment RF (Local VSCode)** | **0.8160** | ✅ Reproduced locally |
 
 **Key finding:** A pre-treatment Random Forest trained on biological signals alone outperforms the Epic ESM even when the ESM is permitted to use post-treatment contaminated data. The model was independently validated on two separate compute environments.
 
