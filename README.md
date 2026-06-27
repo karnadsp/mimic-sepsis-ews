@@ -29,7 +29,7 @@ The Epic Sepsis Model (ESM) is deployed at hundreds of US hospitals including Mi
 
 ## What This Project Builds
 
-### Layer 1 - Machine Learning
+### Layer 1: Machine Learning
 - Random Forest classifier (scikit-learn) trained exclusively on pre-treatment data
 - **Cohort:** 67,286 adult ICU stays from MIMIC-IV v3.1 (Beth Israel Deaconess Medical Center, 2008-2022)
 - **Features:** vital sign trends, early lab results, age, chronic conditions. These are all captured within the first 6 hours of ICU admission and strictly before treatment initiation
@@ -37,7 +37,7 @@ The Epic Sepsis Model (ESM) is deployed at hundreds of US hospitals including Mi
 - **Outcome label:** Sepsis-3 validated labels from MIMIC-IV derived dataset
 - **SHAP contamination audit:** mathematically confirms zero treatment markers in top 20 predictive features
 
-### Layer 2 - Interoperability
+### Layer 2: Interoperability
 - Deterministic Python pipeline transforming model risk scores into FHIR R4 RiskAssessment JSON payloads
 - SNOMED CT terminology bindings for sepsis outcome coding
 - Custom extension certifying pre-treatment status. This is a guarantee which no proprietary sepsis model currently provides
