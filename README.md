@@ -25,6 +25,13 @@ The Epic Sepsis Model (ESM) is deployed at hundreds of US hospitals including Mi
 
 **Key finding:** A pre-treatment Random Forest trained on biological signals alone outperforms the Epic ESM even when the ESM is permitted to use post-treatment contaminated data. The model was independently validated on two separate compute environments.
 
+## Dashboard
+
+### ICU Operations & Capacity Intelligence
+![ICU Overview Dashboard](assets/dashboard_icu_overview.png)
+
+### Sepsis Sentinel — Pre-Treatment Early Warning Model
+![Sepsis Sentinel Dashboard](assets/dashboard_sepsis_sentinel.png)
 ---
 
 ## What This Project Builds
