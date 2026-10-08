@@ -51,12 +51,13 @@ Beyond the known limitations above, these need to be resolved before the results
 
 ## Dashboard
 
-### ICU Operations & Capacity Overview
-![ICU Overview Dashboard](assets/dashboard_icu_overview.png)
+### ICU Cohort Overview
+![ICU Cohort Overview](assets/dashboard_icu_overview.png)
 
-### Sepsis Risk Dashboard
-![Sepsis Sentinel Dashboard](assets/dashboard_sepsis_sentinel.png)
+The risk bands on this page come from a simple heart rate and SpO₂ rule, not from the model.
 
+### Sepsis Classification: Learning Project
+![Sepsis Classification dashboard](assets/dashboard_sepsis_classification.png)
 The risk bands in this dashboard are illustrative rule-based categories built from heart rate and oxygen saturation. They are not Random Forest predictions.
 
 ---
