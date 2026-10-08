@@ -1,65 +1,91 @@
-# MIMIC-IV Pre-Treatment Sepsis Early Warning System
+# MIMIC-IV Sepsis Classification: A Learning Project
+
+> **About this project.** This is a self-directed learning project built with AI assistance. AI tools wrote most of the code; I ran the pipeline, checked intermediate outputs, and fixed data problems along the way. It is not peer reviewed and not clinically validated.
 
 ## Overview
-An independent Random Forest classifier for early sepsis prediction, built exclusively on pre-treatment physiological data from the MIMIC-IV clinical database. This project directly addresses the critical flaw identified by Wiens et al. (2024, NEJM AI), which demonstrated that the Epic Sepsis Model collapses to an AUROC of 0.47 when restricted to pre-treatment data, which is worse than random chance.
+A Random Forest classifier that separates adult ICU stays in MIMIC-IV with and without a Sepsis-3 label, using vital signs and labs from early in the stay. The intended design restricts features to data recorded before a treatment-related cutoff; the initial implementation has known limitations on this point (see "Known limitations"). The project was inspired by Kamran et al. (2024, *NEJM AI*). That study found that the Epic Sepsis Model's AUROC fell from 0.62 to 0.47 at the University of Michigan once predictions made after clinicians had already recognized sepsis were excluded.
 
-This system predicts sepsis risk using only biological signals available before any clinician-initiated treatment markers (antibiotics, blood cultures, IV fluids), and outputs standardized FHIR R4 RiskAssessment resources for clinical deployment.
+The pipeline also writes example FHIR R4 RiskAssessment resources to practice health data interoperability formats.
 
 ---
 
-## The Problem
+## Context
 
-The Epic Sepsis Model (ESM) is deployed at hundreds of US hospitals including Michigan Medicine. Research conducted at the University of Michigan on 77,000+ adult inpatients found that the ESM's AUROC drops from 0.62 to **0.47**, worse than a coin toss, once predictions are restricted to pre-treatment data. This means the model performs worst precisely when clinicians need it most: before they have already suspected sepsis.
+Kamran et al. evaluated the Epic Sepsis Model on 77,582 hospitalizations at the University of Michigan (2018–2020). Overall AUROC was 0.62 (95% CI 0.61–0.63). Restricted to predictions made before treatment began, it was 0.47 (95% CI 0.46–0.48). Their point is that a sepsis model can look useful partly because it picks up clinicians' own actions. This project is an exercise in building a sepsis model on a different dataset with that restriction in mind.
 
 ---
 
 ## Results
 
-| Model | AUROC | Notes |
+| Run | AUROC | Status |
 |---|---|---|
-| Random classifier | 0.50 | Theoretical baseline |
-| Epic ESM: pre-treatment (Wiens et al. 2024) | 0.47 | Worse than random |
-| Epic ESM: with treatment contamination | 0.62 | Standard ESM deployment |
-| **This model: pre-treatment RF (Google Colab)** | **0.7766** | ✅ Primary result |
-| **This model: pre-treatment RF (Local VSCode)** | **0.8160** | ✅ Reproduced locally |
+| Random Forest, run 1 (Google Colab) | 0.7766 | Initial implementation; known methodological limitations |
+| Random Forest, run 2 (local machine) | 0.8160 | Initial implementation; known methodological limitations |
 
-**Key finding:** A pre-treatment Random Forest trained on biological signals alone outperforms the Epic ESM even when the ESM is permitted to use post-treatment contaminated data. The model was independently validated on two separate compute environments.
+**How to read these numbers**
+- **Not a comparison with Epic's model.** Kamran et al. used a different hospital, population, sepsis definition, prediction setup and evaluation method. The Epic figures above are context, not a head-to-head comparison.
+- **The two runs disagree.** Two runs produced AUROC values of 0.7766 and 0.8160. The discrepancy remains unresolved, so these are provisional run outputs rather than a reproducible performance estimate. Data exports, patient splits, random seeds, preprocessing and software versions still need to be compared.
+- **Internal test set only.** Both runs evaluate on MIMIC-IV patients. There is no external or prospective validation.
+
+## Known limitations of the initial implementation
+
+A retrospective review of the project record identified two problems affecting interpretation of the reported results:
+
+- **Observation windows were constructed differently by outcome.** Sepsis cases were truncated at the derived suspected-infection timestamp, while non-sepsis cases could contribute the full six-hour window. This may allow the model to distinguish cases partly through differences in observation duration and measurement counts. Removing the measurement-count feature alone would not fix this, because window length also affects minimum, maximum, average and missingness features.
+- **Median imputation was fitted before the train/test split,** allowing test-set information to influence preprocessing. Preprocessing should be fitted on training data only, then applied to validation and test data.
+
+The reported AUROCs describe this initial implementation. They should not be interpreted as established early-prediction performance. The observation-window rules and preprocessing need to be corrected, followed by a new evaluation.
+
+Additional unresolved questions include patient overlap between splits, feature availability at prediction time, handling of existing sepsis, and the difference between the two runs (see "Open questions").
+
+## Open questions
+
+Beyond the known limitations above, these need to be resolved before the results can support an early-prediction claim:
+
+1. **Prediction time and horizon.** Define when each prediction is made and how far ahead it looks.
+2. **Feature timing.** Confirm, record by record, that every feature was recorded before the prediction time.
+3. **Cutoff for negative cases.** Define an equivalent cutoff for stays without a qualifying sepsis episode.
+4. **Prevalent cases.** Decide how to handle patients who already meet the sepsis definition at the prediction time.
+5. **Patient-level split.** Confirm that no patient appears in both training and test data. The test set holds 13,458 ICU stays, and some patients have more than one stay.
+6. **Run discrepancy.** Find the source of the difference between the two AUROC values.
 
 ## Dashboard
 
-### ICU Operations & Capacity Intelligence
+### ICU Operations & Capacity Overview
 ![ICU Overview Dashboard](assets/dashboard_icu_overview.png)
 
-### Sepsis Sentinel — Pre-Treatment Early Warning Model
+### Sepsis Risk Dashboard
 ![Sepsis Sentinel Dashboard](assets/dashboard_sepsis_sentinel.png)
----
 
-## What This Project Builds
-
-### Layer 1: Machine Learning
-- Random Forest classifier (scikit-learn) trained exclusively on pre-treatment data
-- **Cohort:** 67,286 adult ICU stays from MIMIC-IV v3.1 (Beth Israel Deaconess Medical Center, 2008-2022)
-- **Features:** vital sign trends, early lab results, age, chronic conditions. These are all captured within the first 6 hours of ICU admission and strictly before treatment initiation
-- **Treatment trigger:** earliest of first antibiotic order or blood culture which defines the contamination cutoff
-- **Outcome label:** Sepsis-3 validated labels from MIMIC-IV derived dataset
-- **SHAP contamination audit:** mathematically confirms zero treatment markers in top 20 predictive features
-
-### Layer 2: Interoperability
-- Deterministic Python pipeline transforming model risk scores into FHIR R4 RiskAssessment JSON payloads
-- SNOMED CT terminology bindings for sepsis outcome coding
-- Custom extension certifying pre-treatment status. This is a guarantee which no proprietary sepsis model currently provides
-- SHAP-derived rationale text embedded in each resource for clinical transparency
+The risk bands in this dashboard are illustrative rule-based categories built from heart rate and oxygen saturation. They are not Random Forest predictions.
 
 ---
 
-## SHAP Contamination Audit: PASSED
+## What This Project Includes
 
-Top 20 features by mean absolute SHAP value: **zero treatment markers**:
+### Prediction model
+- Random Forest classifier (scikit-learn)
+- **Cohort:** 67,286 adult ICU stays from MIMIC-IV v3.1 (Beth Israel Deaconess Medical Center, 2008–2022)
+- **Features:** vital signs, early lab results, age and comorbidity index from the first 6 hours of the ICU stay, intended to be limited to data recorded before the candidate cutoff
+- **Candidate treatment cutoff:** the extraction uses MIMIC-IV's derived suspected-infection timestamp. This timestamp is based on antibiotic–culture pairing rules and does not necessarily represent the first treatment-related action. The cutoff implementation and its handling of patients without a qualifying sepsis episode require further verification.
+- **Outcome label:** Sepsis-3 labels from the MIMIC-IV derived tables
 
-| Rank | Feature | Clinical Meaning |
+### Feature attribution check
+- SHAP values were used to list the most influential features. No explicit treatment variables (antibiotics, blood cultures, IV fluids) appear among the top 20. This is not a timing check, and it does not address the observation-window problem described under "Known limitations".
+
+### FHIR output
+- Example JSON intended to follow the FHIR R4 RiskAssessment resource, with SNOMED CT coding and SHAP-based rationale text. Conformance has not been checked with a FHIR validator.
+- The original output included a custom extension flag certifying pre-treatment status, set to true. That flag is not supported by the evidence and should be disregarded.
+- This is a format exercise. It does not show that the predictions are clinically valid or ready for clinical use.
+
+---
+
+## Top Features by SHAP Value
+
+| Rank | Feature | Meaning |
 |---|---|---|
-| 1 | vital_measurement_count | Monitoring intensity proxy |
-| 2 | min_hr | Minimum heart rate in 6hr window |
+| 1 | vital_measurement_count | Number of vital-sign measurements (monitoring intensity) |
+| 2 | min_hr | Minimum heart rate in the 6-hour window |
 | 3 | min_spo2 | Minimum oxygen saturation |
 | 4 | avg_rr | Average respiratory rate |
 | 5 | avg_bun | Blood urea nitrogen (kidney function) |
@@ -67,9 +93,9 @@ Top 20 features by mean absolute SHAP value: **zero treatment markers**:
 | 7 | charlson_comorbidity_index | Chronic disease burden |
 | 8 | max_temp | Maximum temperature |
 | 9 | avg_hr | Average heart rate |
-| 10 | avg_pao2fio2_missing | Blood gas not ordered (lower acuity signal) |
+| 10 | avg_pao2fio2_missing | PaO₂/FiO₂ value missing from the extracted feature window |
 
-No antibiotics, no blood culture timestamps, no IV fluid markers anywhere in the top 20 features.
+**Limits of this check.** No explicit treatment variables appear in the top 20, but that does not rule out indirect signals of clinical concern. The most important feature, `vital_measurement_count`, is also affected by the unequal observation windows described above. For `avg_pao2fio2_missing`, missingness may reflect clinical testing decisions, incomplete measurements, or the extraction process; its meaning requires checking against the feature-generation code. A stricter check would also confirm, record by record, that every feature value was recorded before the cutoff time.
 
 ---
 
@@ -83,22 +109,22 @@ mimic-sepsis-ews/
 ├── notebooks/
 │   ├── 01_cohort_definition.ipynb       # Data loading, imputation, train/test split
 │   ├── 02_feature_engineering.ipynb     # Exploratory data analysis
-│   ├── 03_model_training.ipynb          # Random Forest, AUROC, SHAP audit
+│   ├── 03_model_training.ipynb          # Random Forest, AUROC, SHAP
 │   └── 04_fhir_output.ipynb             # FHIR R4 RiskAssessment generation
-├── src/
-│   ├── cohort.py                        # Cohort definition module
-│   ├── features.py                      # Feature engineering module
-│   ├── model.py                         # Model training and evaluation
-│   ├── fhir_generator.py                # FHIR R4 RiskAssessment output
-│   └── contamination_audit.py           # Pre-treatment contamination audit
+├── src/                                 # Settings and documentation only; runnable code is in the notebooks
+│   ├── cohort.py                        # Cohort definition notes
+│   ├── features.py                      # Feature definition notes
+│   ├── model.py                         # Model settings
+│   ├── fhir_generator.py                # FHIR output notes
+│   └── contamination_audit.py           # Feature attribution notes
 └── README.md
 ```
 
 ---
 
-## Reproducibility
+## Running the Notebooks
 
-Notebooks are environment-agnostic. They are designed to auto-detect Google Colab vs local VSCode:
+The notebooks detect whether they are running in Google Colab or locally:
 
 ```python
 if os.path.exists('/content/drive'):
@@ -107,25 +133,27 @@ if os.path.exists('/content/drive'):
     drive.mount('/content/drive')
     project_path = '/content/drive/MyDrive/mimic-sepsis-ews'
 else:
-    # Local VSCode
+    # Local
     project_path = os.path.abspath(os.path.join(os.getcwd(), '..'))
 ```
 
-**Tested environments:**
-- Google Colab (Python 3, scikit-learn 1.9.0) gives AUROC 0.7766
-- Local VSCode, Windows 11, Intel Core i9-11800H, 32GB RAM (Python 3, scikit-learn) gives AUROC 0.8160
+**Environments used**
+- Google Colab (Python 3, scikit-learn version not recorded): AUROC 0.7766
+- Local machine, Windows 11 (Python 3, scikit-learn 1.9.0): AUROC 0.8160
+
+See "How to read these numbers" above for the open question about why these differ.
 
 ---
 
 ## Dataset
 
 MIMIC-IV v3.1 (Medical Information Mart for Intensive Care)
-- **Source:** Beth Israel Deaconess Medical Center, Boston MA (2008-2022)
+- **Source:** Beth Israel Deaconess Medical Center, Boston MA (2008–2022)
 - **Access:** PhysioNet Credentialed Health Data License
 - **Size:** 67,286 adult ICU stays used in this project
-- **Access via:** Google BigQuery (`physionet-data.mimiciv_3_1_hosp`, `mimiciv_3_1_icu`, `mimiciv_3_1_derived`)
+- **Accessed via:** Google BigQuery (`physionet-data` project; MIMIC-IV v3.1 hosp and icu datasets plus derived concept tables. Exact dataset names are in the SQL queries.)
 
-Raw data files are not included in this repository in compliance with the PhysioNet Data Use Agreement.
+Raw data files are not included in this repository, in line with the PhysioNet Data Use Agreement.
 
 ---
 
@@ -137,21 +165,21 @@ pip install pandas numpy scikit-learn shap matplotlib seaborn jupyter
 
 ---
 
-## Key References
+## References
 
-- Wiens et al. (2024). Evaluation of Sepsis Prediction Models before Onset of Treatment. *NEJM AI*. DOI: 10.1056/AIoa2300032
-- Singer M, et al. The Third International Consensus Definitions for Sepsis and Septic Shock (Sepsis-3). *JAMA*. 2016;315(8):801-810.
-- Johnson et al. MIMIC-IV (version 3.1). PhysioNet. DOI: 10.13026/kpb9-mt58
-- Johnson AEW, et al. MIMIC-IV, a freely accessible electronic health record dataset. *Sci Data*. 2023. DOI: 10.1038/s41597-022-01899-x
-- HL7 International. FHIR R4 RiskAssessment Resource. https://hl7.org/fhir/R4/riskassessment.html
+- F. Kamran, D. Tjandra, A. Heiler, J. Virzi, K. Singh, J. E. King, T. S. Valley, and J. Wiens, "Evaluation of sepsis prediction models before onset of treatment," *NEJM AI*, vol. 1, no. 3, 2024, doi: 10.1056/AIoa2300032.
+- M. Singer *et al.*, "The Third International Consensus Definitions for Sepsis and Septic Shock (Sepsis-3)," *JAMA*, vol. 315, no. 8, pp. 801–810, 2016.
+- A. Johnson *et al.*, "MIMIC-IV (version 3.1)," PhysioNet, 2024, doi: 10.13026/kpb9-mt58.
+- A. E. W. Johnson *et al.*, "MIMIC-IV, a freely accessible electronic health record dataset," *Sci. Data*, vol. 10, Art. no. 1, 2023, doi: 10.1038/s41597-022-01899-x.
+- HL7 International, "FHIR R4 RiskAssessment Resource." [Online]. Available: https://hl7.org/fhir/R4/riskassessment.html
 
 ---
 
 ## Author
 
 Shreyas Karnad
-Master of Health Informatics, University of Michigan (May 2026)
+Master of Health Informatics, University of Michigan (2026)
 [LinkedIn](https://linkedin.com/in/shreyas-karnad) | [Portfolio](https://karnadsp.github.io) | [GitHub](https://github.com/karnadsp)
 
 ## Status
-🟢 Complete.  AUROC 0.7766 (Colab) | 0.8160 (Local) | FHIR R4 output | SHAP audit passed
+Learning project. Initial modeling June 2026; the dashboard and local re-run followed later. The known limitations and open questions above are unresolved, and a corrected re-run is the next step. Not clinically validated.
